@@ -35,11 +35,29 @@ fn test_deserialize_with_runs_from_provided_data() {
 }
 
 #[test]
+fn test_deserialize_with_runs_from_provided_data() {
+    let mut expected = test_data_bitmap();
+    // Call optimize to create run containers
+    expected.optimize();
+    assert_eq!(RoaringBitmap::deserialize_from(&mut &BITMAP_WITH_RUNS[..]).unwrap(), expected);
+}
+
+#[test]
 fn test_serialize_into_provided_data() {
     let bitmap = test_data_bitmap();
     let mut buffer = vec![];
     bitmap.serialize_into(&mut buffer).unwrap();
     assert!(BITMAP_WITHOUT_RUNS == &buffer[..]);
+}
+
+#[test]
+fn test_serialize_with_runs_into_provided_data() {
+    let mut bitmap = test_data_bitmap();
+    // Call optimize to create run containers
+    bitmap.optimize();
+    let mut buffer = vec![];
+    bitmap.serialize_into(&mut buffer).unwrap();
+    assert!(BITMAP_WITH_RUNS == &buffer[..]);
 }
 
 #[test]
@@ -538,4 +556,14 @@ fn test_strange() {
     let original = ARRAY.iter().cloned().collect::<RoaringBitmap>();
     let new = serialize_and_deserialize(&original);
     assert_eq!(original, new);
+}
+
+#[test]
+fn test_runs() {
+    let mut original = RoaringBitmap::from_iter((1000..3000).chain(70000..77000));
+    original.optimize();
+    let new = serialize_and_deserialize(&original);
+    assert_eq!(original.len(), new.len());
+    assert_eq!(original.min(), new.min());
+    assert_eq!(original.max(), new.max());
 }
